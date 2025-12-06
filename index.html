@@ -1,1 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>恋愛偏差値トレーニング（理沙）</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="title">理沙とのチャット練習</div>
+      <div class="subtitle">マッチングアプリ風 恋愛偏差値ゲーム</div>
+    </header>
+
+    <main class="main">
+      <div id="chat" class="chat"></div>
+
+      <div class="status">
+        <span>スコア: <span id="score">0</span></span>
+        <span>ステージ: <span id="stage">1</span></span>
+        <span>ターン: <span id="turn">0</span></span>
+      </div>
+
+      <div id="result" class="result hidden"></div>
+    </main>
+
+    <footer class="footer">
+      <input
+        id="msgInput"
+        type="text"
+        placeholder="メッセージを入力..."
+        autocomplete="off"
+      />
+      <button id="sendBtn">送信</button>
+    </footer>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
 
