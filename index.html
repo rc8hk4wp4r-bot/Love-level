@@ -270,6 +270,51 @@
       color: #111827;
       margin-top: 4px;
     }
+    /* -------------------------- */
+/* ▼ スマホ向けレイアウト調整 ▼ */
+/* -------------------------- */
+@media (max-width: 768px) {
+  body {
+    /* 画面上部からアプリを表示する（中央寄せをやめる） */
+    align-items: stretch;
+  }
+
+  .app {
+    max-width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* サイドバーを上に、チャットを下に配置 */
+  .sidebar {
+    width: 100%;
+    height: 150px;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .chat-area {
+    flex: 1;
+  }
+
+  .chat-body {
+    padding: 12px;
+  }
+
+  .chat-header {
+    padding: 8px 12px;
+  }
+
+  .sidebar-header {
+    padding: 12px 16px;
+  }
+
+  .character-item {
+    padding: 8px 12px;
+  }
+}
+
   </style>
 </head>
 
