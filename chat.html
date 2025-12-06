@@ -28,7 +28,7 @@
     .app {
       width: 100%;
       max-width: 1040px;
-      height: 100%;          /* ← 100vh ではなく、画面高さに追従 */
+      height: 100%;
       margin: 0 auto;
       background: #ffffff;
       border-radius: 16px;
@@ -218,13 +218,11 @@
       color: #ffffff;
     }
 
-    /* -------------------------- */
     /* ▼ スマホ向けレイアウト調整 ▼ */
-    /* -------------------------- */
     @media (max-width: 768px) {
       .app {
         max-width: 100%;
-        height: 100%;      /* 100vh だと拡大時に切れるので 100% に */
+        height: 100%;
         border-radius: 0;
         box-shadow: none;
         flex-direction: column;      /* 上：マッチ一覧 / 下：チャット */
@@ -232,13 +230,13 @@
 
       .sidebar {
         width: 100%;
-        flex: 0 0 180px;             /* 高さ 180px に固定して、重ならないようにする */
+        flex: 0 0 180px;             /* 高さ 180px 固定 */
         border-right: none;
         border-bottom: 1px solid #e5e7eb;
       }
 
       .character-list {
-        max-height: calc(180px - 56px); /* 180 - header(だいたい) でリスト部分だけスクロール */
+        max-height: calc(180px - 56px); /* header分を引いた高さだけスクロール */
         overflow-y: auto;
       }
 
@@ -285,9 +283,7 @@
   </div>
 
   <script>
-    /* --------------------- */
-    /* ▼ キャラデータ ▼ */
-    /* --------------------- */
+    /* ▼ キャラデータ */
     const characters = [
       { id: "lisa", name: "理沙", initials: "リ", desc: "26歳 / 広告代理店", headerSub: "カフェ好き女子" },
       { id: "miyu", name: "美優", initials: "ミ", desc: "25歳 / 保育士", headerSub: "ふわふわ系" },
@@ -311,9 +307,7 @@
     const messageInputEl = document.getElementById("messageInput");
     const sendButtonEl = document.getElementById("sendButton");
 
-    /* --------------------- */
-    /* ▼ キャラ一覧生成 ▼ */
-    /* --------------------- */
+    /* ▼ キャラ一覧生成 */
     function renderCharacterList() {
       characterListEl.innerHTML = "";
       characters.forEach(c => {
@@ -335,8 +329,7 @@
       });
     }
 
-    /* --------------------- */
-    /* ▼ キャラを選択 ▼ */
+    /* ▼ キャラを選択 */
     function selectCharacter(id) {
       currentCharacterId = id;
       const c = characters.find(x => x.id === id);
@@ -352,10 +345,40 @@
       renderChat();
     }
 
-    /* --------------------- */
-    /* ▼ チャット表示 ▼ */
+    /* ▼ チャット表示 */
     function renderChat() {
       chatBodyEl.innerHTML = "";
+
+      // まだ誰も選ばれていないときは案内カードだけ表示
+      if (!currentCharacterId) {
+        const wrapper = document.createElement("div");
+        wrapper.style.height = "100%";
+        wrapper.style.display = "flex";
+        wrapper.style.alignItems = "center";
+        wrapper.style.justifyContent = "center";
+
+        const card = document.createElement("div");
+        card.style.background = "#ffffff";
+        card.style.borderRadius = "16px";
+        card.style.padding = "16px 20px";
+        card.style.boxShadow = "0 4px 12px rgba(15,23,42,0.08)";
+        card.style.maxWidth = "320px";
+        card.style.textAlign = "center";
+        card.style.fontSize = "14px";
+        card.style.color = "#4b5563";
+
+        card.innerHTML = `
+          <div style="font-weight:600; margin-bottom:4px;">相手を選んでください</div>
+          <div style="font-size:12px; color:#9ca3af;">
+            上のマッチ一覧から話したい子をタップすると<br>チャットが始まります。
+          </div>
+        `;
+
+        wrapper.appendChild(card);
+        chatBodyEl.appendChild(wrapper);
+        return;
+      }
+
       const logs = histories[currentCharacterId] || [];
 
       logs.forEach(msg => {
@@ -373,8 +396,7 @@
       chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
     }
 
-    /* --------------------- */
-    /* ▼ 送信処理 ▼ */
+    /* ▼ 送信処理 */
     function handleSend() {
       const text = messageInputEl.value.trim();
       if (!text || !currentCharacterId) return;
@@ -396,8 +418,9 @@
       if (e.key === "Enter") handleSend();
     };
 
-    /* 初期表示：リストだけ出しておく */
+    /* ▼ 初期表示：リスト＋案内だけ */
     renderCharacterList();
+    renderChat();
   </script>
 
 </body>
