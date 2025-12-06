@@ -2,40 +2,52 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>恋愛偏差値トレーニング（理沙）</title>
+  <title>恋愛偏差値チャット</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-  <div class="app">
-    <header class="header">
-      <div class="title">理沙とのチャット練習</div>
-      <div class="subtitle">マッチングアプリ風 恋愛偏差値ゲーム</div>
-    </header>
-
-    <main class="main">
-      <div id="chat" class="chat"></div>
-
-      <div class="status">
-        <span>スコア: <span id="score">0</span></span>
-        <span>ステージ: <span id="stage">1</span></span>
-        <span>ターン: <span id="turn">0</span></span>
+  <!-- ▼ スタート画面 ▼ -->
+  <div id="startScreen" class="start-screen">
+    <div class="start-inner">
+      <div class="start-title">恋愛偏差値チャット</div>
+      <div class="start-sub">
+        マッチングで出会った女の子と<br>
+        会話しながら恋愛偏差値を鍛えるゲームです。
       </div>
+      <button id="startButton" class="start-button">はじめる</button>
+    </div>
+  </div>
 
-      <div id="result" class="result hidden"></div>
+  <!-- ▼ 本体アプリ ▼ -->
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">マッチ一覧</div>
+        <div class="sidebar-sub">話したい女の子を選んでね</div>
+      </div>
+      <div id="characterList" class="character-list"></div>
+    </aside>
+
+    <main class="chat-area">
+      <header class="chat-header">
+        <div id="chatHeaderAvatar" class="chat-header-avatar"><span>？</span></div>
+        <div>
+          <div id="chatHeaderName" class="chat-header-name">相手を選んでください</div>
+          <div id="chatHeaderSub" class="chat-header-sub">左のリストから選ぶと開始します</div>
+        </div>
+      </header>
+
+      <section id="chatBody" class="chat-body"></section>
+
+      <footer class="chat-footer">
+        <input id="messageInput" class="input" type="text" placeholder="メッセージを入力..." disabled>
+        <button id="sendButton" class="send-button" disabled>送信</button>
+      </footer>
     </main>
-
-    <footer class="footer">
-      <input
-        id="msgInput"
-        type="text"
-        placeholder="メッセージを入力..."
-        autocomplete="off"
-      />
-      <button id="sendBtn">送信</button>
-    </footer>
   </div>
 
   <script src="main.js"></script>
 </body>
 </html>
-
