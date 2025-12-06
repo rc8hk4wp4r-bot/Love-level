@@ -1,1 +1,451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>恋愛偏差値チャット</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 1040px;
+      height: 90vh;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+      display: flex;
+      overflow: hidden;
+
+      /* スタート前は薄くする */
+      opacity: 0.4;
+      transition: opacity 0.3s ease;
+    }
+    .app.started {
+      opacity: 1;
+    }
+
+    /* 左：キャラ一覧 */
+    .sidebar {
+      width: 320px;
+      border-right: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      background: #f9fafb;
+    }
+
+    .sidebar-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .sidebar-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .sidebar-sub {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    .character-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .character-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .character-item:hover {
+      background: #eef2ff;
+    }
+
+    .character-item.active {
+      background: #e0ecff;
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: #fee2e2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .character-meta {
+      min-width: 0;
+    }
+
+    .character-name {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .character-desc {
+      font-size: 12px;
+      color: #6b7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 右：チャットエリア */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #e5e7eb;
+    }
+
+    .chat-header {
+      height: 64px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .chat-header-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: #fee2e2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      margin-right: 10px;
+    }
+
+    .chat-header-name {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .chat-header-sub {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .chat-body {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      background: #e5e7eb;
+    }
+
+    .message-row {
+      display: flex;
+      margin-bottom: 8px;
+    }
+
+    .message-row.me {
+      justify-content: flex-end;
+    }
+
+    .bubble {
+      max-width: 70%;
+      padding: 8px 12px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .bubble.lisa {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-bottom-left-radius: 4px;
+    }
+
+    .bubble.me {
+      background: #4f46e5;
+      color: #ffffff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-footer {
+      padding: 10px 12px;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 8px;
+    }
+
+    .input {
+      flex: 1;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      padding: 8px 14px;
+      font-size: 14px;
+    }
+
+    .send-button {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #4f46e5;
+      color: #ffffff;
+    }
+
+    /* -------------------------- */
+    /* ▼ スタート画面 ▼ */
+    /* -------------------------- */
+    .start-screen {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, #fee2e2, #1f2937 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .start-inner {
+      background: rgba(17, 24, 39, 0.85);
+      color: #f9fafb;
+      padding: 32px 28px;
+      border-radius: 20px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .start-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .start-sub {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #e5e7eb;
+      margin-bottom: 16px;
+    }
+
+    .start-button {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 26px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #f97316;
+      color: #111827;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ▼ スタート画面 ▼ -->
+  <div id="startScreen" class="start-screen">
+    <div class="start-inner">
+      <div class="start-title">恋愛偏差値チャット</div>
+      <div class="start-sub">
+        マッチングで出会った女の子と<br>
+        会話しながら恋愛偏差値を鍛えるゲームです。
+      </div>
+      <button id="startButton" class="start-button">はじめる</button>
+    </div>
+  </div>
+
+  <!-- ▼ 本体アプリ ▼ -->
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">マッチ一覧</div>
+        <div class="sidebar-sub">話したい女の子を選んでね</div>
+      </div>
+      <div id="characterList" class="character-list"></div>
+    </aside>
+
+    <main class="chat-area">
+      <header class="chat-header">
+        <div id="chatHeaderAvatar" class="chat-header-avatar"><span>？</span></div>
+        <div>
+          <div id="chatHeaderName" class="chat-header-name">相手を選んでください</div>
+          <div id="chatHeaderSub" class="chat-header-sub">左のリストから選ぶと開始します</div>
+        </div>
+      </header>
+
+      <section id="chatBody" class="chat-body"></section>
+
+      <footer class="chat-footer">
+        <input id="messageInput" class="input" type="text" placeholder="メッセージを入力..." disabled>
+        <button id="sendButton" class="send-button" disabled>送信</button>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    /* --------------------- */
+    /* ▼ キャラデータ ▼ */
+    /* --------------------- */
+    const characters = [
+      { id: "lisa", name: "理沙", initials: "リ", desc: "26歳 / 広告代理店", headerSub: "カフェ好き女子" },
+      { id: "miyu", name: "美優", initials: "ミ", desc: "25歳 / 保育士", headerSub: "ふわふわ系" },
+      { id: "kana", name: "香奈", initials: "カ", desc: "27歳 / デザイナー", headerSub: "映画好き" }
+    ];
+
+    const histories = {};
+    characters.forEach(c => {
+      histories[c.id] = [
+        { from: c.id, text: `はじめまして、${c.name}です☺️` }
+      ];
+    });
+
+    let currentCharacterId = null;
+
+    const characterListEl = document.getElementById("characterList");
+    const chatBodyEl = document.getElementById("chatBody");
+    const chatHeaderNameEl = document.getElementById("chatHeaderName");
+    const chatHeaderSubEl = document.getElementById("chatHeaderSub");
+    const chatHeaderAvatarEl = document.getElementById("chatHeaderAvatar");
+    const messageInputEl = document.getElementById("messageInput");
+    const sendButtonEl = document.getElementById("sendButton");
+
+    /* --------------------- */
+    /* ▼ キャラ一覧生成 ▼ */
+    /* --------------------- */
+    function renderCharacterList() {
+      characterListEl.innerHTML = "";
+      characters.forEach(c => {
+        const item = document.createElement("div");
+        item.className = "character-item" + (c.id === currentCharacterId ? " active" : "");
+        item.dataset.id = c.id;
+
+        item.innerHTML = `
+          <div class="avatar"><span>${c.initials}</span></div>
+          <div class="character-meta">
+            <div class="character-name">${c.name}</div>
+            <div class="character-desc">${c.desc}</div>
+          </div>
+        `;
+
+        item.onclick = () => selectCharacter(c.id);
+
+        characterListEl.appendChild(item);
+      });
+    }
+
+    /* --------------------- */
+    /* ▼ キャラを選択 ▼ */
+    /* --------------------- */
+    function selectCharacter(id) {
+      currentCharacterId = id;
+      const c = characters.find(x => x.id === id);
+
+      chatHeaderAvatarEl.innerHTML = `<span>${c.initials}</span>`;
+      chatHeaderNameEl.textContent = c.name;
+      chatHeaderSubEl.textContent = c.headerSub;
+
+      messageInputEl.disabled = false;
+      sendButtonEl.disabled = false;
+
+      renderCharacterList();
+      renderChat();
+    }
+
+    /* --------------------- */
+    /* ▼ チャット表示 ▼ */
+    /* --------------------- */
+    function renderChat() {
+      chatBodyEl.innerHTML = "";
+      const logs = histories[currentCharacterId] || [];
+
+      logs.forEach(msg => {
+        const row = document.createElement("div");
+        row.className = "message-row " + (msg.from === "me" ? "me" : "");
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble " + (msg.from === "me" ? "me" : "lisa");
+        bubble.textContent = msg.text;
+
+        row.appendChild(bubble);
+        chatBodyEl.appendChild(row);
+      });
+
+      chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+    }
+
+    /* --------------------- */
+    /* ▼ 送信処理 ▼ */
+    /* --------------------- */
+    function handleSend() {
+      const text = messageInputEl.value.trim();
+      if (!text || !currentCharacterId) return;
+
+      histories[currentCharacterId].push({ from: "me", text });
+
+      const c = characters.find(x => x.id === currentCharacterId);
+      histories[currentCharacterId].push({
+        from: c.id,
+        text: `なるほど、${c.name}はそういうのも好きかも☺️`
+      });
+
+      messageInputEl.value = "";
+      renderChat();
+    }
+
+    sendButtonEl.onclick = handleSend;
+    messageInputEl.onkeydown = e => {
+      if (e.key === "Enter") handleSend();
+    };
+
+    renderCharacterList();
+
+    /* --------------------- */
+    /* ▼ スタート画面 ▼ */
+    /* --------------------- */
+    const startButtonEl = document.getElementById("startButton");
+    const startScreenEl = document.getElementById("startScreen");
+    const appEl = document.querySelector(".app");
+
+    startButtonEl.onclick = () => {
+      startScreenEl.style.display = "none";
+      appEl.classList.add("started");
+
+      selectCharacter("lisa"); // 最初に理沙を開く
+    };
+  </script>
+
+</body>
+</html>
