@@ -342,6 +342,9 @@
     const messageInputEl = document.getElementById("messageInput");
     const sendButtonEl = document.getElementById("sendButton");
 
+    /* --------------------- */
+    /* ▼ キャラ一覧生成 ▼ */
+    /* --------------------- */
     function renderCharacterList() {
       characterListEl.innerHTML = "";
       characters.forEach(c => {
@@ -363,6 +366,9 @@
       });
     }
 
+    /* --------------------- */
+    /* ▼ キャラを選択 ▼ */
+    /* --------------------- */
     function selectCharacter(id) {
       currentCharacterId = id;
       const c = characters.find(x => x.id === id);
@@ -378,6 +384,9 @@
       renderChat();
     }
 
+    /* --------------------- */
+    /* ▼ チャット表示 ▼ */
+    /* --------------------- */
     function renderChat() {
       chatBodyEl.innerHTML = "";
       const logs = histories[currentCharacterId] || [];
@@ -397,6 +406,9 @@
       chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
     }
 
+    /* --------------------- */
+    /* ▼ 送信処理 ▼ */
+    /* --------------------- */
     function handleSend() {
       const text = messageInputEl.value.trim();
       if (!text || !currentCharacterId) return;
@@ -420,6 +432,9 @@
 
     renderCharacterList();
 
+    /* --------------------- */
+    /* ▼ スタート画面 ▼ */
+    /* --------------------- */
     const startButtonEl = document.getElementById("startButton");
     const startScreenEl = document.getElementById("startScreen");
     const appEl = document.querySelector(".app");
@@ -427,7 +442,8 @@
     startButtonEl.onclick = () => {
       startScreenEl.style.display = "none";
       appEl.classList.add("started");
-      selectCharacter("lisa");
+
+      selectCharacter("lisa"); // 最初に理沙を開く
     };
   </script>
 
