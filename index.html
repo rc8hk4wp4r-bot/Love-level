@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>恋愛チャットMVP</title>
+  <style>
+    :root {
+      font-family: "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #1f2937;
+      background-color: #f7f7f8;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #ffe4ec 0%, #f4f7ff 100%);
+    }
+
+    .app {
+      width: min(420px, calc(100vw - 24px));
+      height: 720px;
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.16);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      padding: 14px 18px;
+      background: linear-gradient(135deg, #ffb3c1 0%, #ffcfe0 100%);
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    header button {
+      background: transparent;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      transition: background 0.2s ease;
+      font-size: 16px;
+    }
+
+    header button:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    main {
+      padding: 18px;
+      overflow-y: auto;
+      background: #fdfdff;
+    }
+
+    .screen {
+      display: none;
+      height: 100%;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .start-screen {
+      display: grid;
+      place-items: center;
+      gap: 18px;
+      text-align: center;
+      height: 100%;
+    }
+
+    .start-button {
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #ff7fa5, #ff9fc3);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 25px rgba(255, 143, 177, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .start-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 32px rgba(255, 143, 177, 0.35);
+    }
+
+    .girls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 14px;
+    }
+
+    .girl-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.18s ease, border 0.18s ease;
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+    }
+
+    .girl-card:hover {
+      transform: translateY(-2px);
+      border-color: #ffb3c1;
+    }
+
+    .girl-avatar {
+      width: 88px;
+      height: 88px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #cce0ff, #f8d3ff);
+      display: grid;
+      place-items: center;
+      color: #667;
+      font-weight: 700;
+      font-size: 20px;
+    }
+
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      gap: 12px;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 4px 2px;
+    }
+
+    .bubble {
+      max-width: 78%;
+      padding: 10px 12px;
+      border-radius: 16px;
+      line-height: 1.5;
+      word-break: break-word;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .bubble.left {
+      align-self: flex-start;
+      background: #fff;
+      border-bottom-left-radius: 4px;
+    }
+
+    .bubble.right {
+      align-self: flex-end;
+      background: #d2f2ff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .input-row input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 999px;
+      border: 1px solid #d7d7e0;
+      background: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .input-row input:focus {
+      border-color: #ff8fb1;
+      box-shadow: 0 0 0 3px rgba(255, 143, 177, 0.2);
+    }
+
+    .send-button {
+      border: none;
+      background: linear-gradient(135deg, #4dd0ff, #8ae0ff);
+      color: #0b1b2b;
+      padding: 10px 16px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 12px 22px rgba(74, 193, 255, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .send-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(74, 193, 255, 0.35);
+    }
+
+    .empty-hint {
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 24px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header id="header">
+      <span>恋愛チャットMVP</span>
+    </header>
+    <main>
+      <section id="start" class="screen active start-screen">
+        <div>
+          <p>恋愛チャットのデモへようこそ。</p>
+          <p>スタートして気になる子を選ぼう！</p>
+        </div>
+        <button class="start-button" id="startBtn">スタート</button>
+      </section>
+
+      <section id="girls" class="screen">
+        <h2>女の子一覧</h2>
+        <div class="girls" id="girlsList"></div>
+      </section>
+
+      <section id="chat" class="screen">
+        <div class="chat-area">
+          <div class="messages" id="messages"></div>
+          <div class="empty-hint" id="emptyHint">メッセージを送ってみよう！</div>
+          <div class="input-row">
+            <input type="text" id="messageInput" placeholder="メッセージを入力" />
+            <button class="send-button" id="sendBtn">送信</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const screens = {
+      start: document.getElementById('start'),
+      girls: document.getElementById('girls'),
+      chat: document.getElementById('chat'),
+    };
+    const header = document.getElementById('header');
+    const startBtn = document.getElementById('startBtn');
+    const girlsList = document.getElementById('girlsList');
+    const messagesEl = document.getElementById('messages');
+    const emptyHint = document.getElementById('emptyHint');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    const girls = [
+      { id: 'mio', name: 'みお', mood: '優しく聞き上手' },
+      { id: 'hina', name: 'ひな', mood: '元気いっぱい' },
+      { id: 'sora', name: 'そら', mood: '落ち着いたお姉さん' },
+    ];
+
+    let currentGirl = null;
+
+    const renderGirls = () => {
+      girlsList.innerHTML = '';
+      girls.forEach((girl) => {
+        const card = document.createElement('div');
+        card.className = 'girl-card';
+        card.innerHTML = `
+          <div class="girl-avatar">${girl.name[0]}</div>
+          <div>
+            <div style="font-weight:700;">${girl.name}</div>
+            <div style="color:#6b7280;font-size:13px;">${girl.mood}</div>
+          </div>
+        `;
+        card.addEventListener('click', () => enterChat(girl));
+        girlsList.appendChild(card);
+      });
+    };
+
+    const switchScreen = (target) => {
+      Object.values(screens).forEach((screen) => screen.classList.remove('active'));
+      screens[target].classList.add('active');
+    };
+
+    const enterChat = (girl) => {
+      currentGirl = girl;
+      header.innerHTML = `
+        <button aria-label="back" id="backBtn">←</button>
+        <span>${girl.name}とのチャット</span>
+      `;
+      document.getElementById('backBtn').onclick = () => {
+        header.innerHTML = '<span>恋愛チャットMVP</span>';
+        switchScreen('girls');
+        messagesEl.innerHTML = '';
+        emptyHint.style.display = 'block';
+        currentGirl = null;
+      };
+      switchScreen('chat');
+      messageInput.focus();
+    };
+
+    const appendMessage = (text, side = 'right') => {
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${side}`;
+      bubble.textContent = text;
+      messagesEl.appendChild(bubble);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      emptyHint.style.display = 'none';
+    };
+
+    const botReply = () => {
+      if (!currentGirl) return;
+      const replies = {
+        mio: 'うんうん、もっと聞かせて？',
+        hina: 'わー！それすごいね！',
+        sora: 'そうなんだ、落ち着いて話そう。',
+      };
+      const text = replies[currentGirl.id] || 'なるほどね。';
+      setTimeout(() => appendMessage(text, 'left'), 600);
+    };
+
+    const sendMessage = () => {
+      const text = messageInput.value.trim();
+      if (!text) return;
+      appendMessage(text, 'right');
+      messageInput.value = '';
+      botReply();
+    };
+
+    startBtn.addEventListener('click', () => {
+      switchScreen('girls');
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    renderGirls();
+  </script>
+</body>
+</html>
