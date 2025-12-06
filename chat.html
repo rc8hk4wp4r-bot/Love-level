@@ -24,7 +24,7 @@
       color: #111827;
     }
 
-    /* アプリ本体：PC では中央寄せ、スマホでは全幅 */
+    /* アプリ本体：PC では中央寄せ、スマホでは全幅＆スクロール可 */
     .app {
       width: 100%;
       max-width: 1040px;
@@ -37,7 +37,7 @@
       overflow: hidden;
     }
 
-    /* 左：キャラ一覧 */
+    /* 左：キャラ一覧（PC用） */
     .sidebar {
       width: 320px;
       border-right: 1px solid #e5e7eb;
@@ -132,6 +132,18 @@
       border-bottom: 1px solid #e5e7eb;
     }
 
+    /* スマホ用 戻るボタン（PCでは非表示） */
+    .back-button {
+      display: none;
+      border: none;
+      background: transparent;
+      font-size: 20px;
+      margin-right: 8px;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+    }
+
     .chat-header-avatar {
       width: 40px;
       height: 40px;
@@ -197,6 +209,8 @@
       border-top: 1px solid #e5e7eb;
       display: flex;
       gap: 8px;
+      /* iPhone のホームバーに被らないように */
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     }
 
     .input {
@@ -218,30 +232,50 @@
       color: #ffffff;
     }
 
-    /* ▼ スマホ向けレイアウト調整 ▼ */
+    /* -------------------------- */
+    /* ▼ スマホ向けレイアウト（LINEスタイル） ▼ */
+    /* -------------------------- */
     @media (max-width: 768px) {
       .app {
         max-width: 100%;
-        height: 100%;
+        height: auto;           /* キーボード出てもスクロールで対応 */
+        min-height: 100vh;
         border-radius: 0;
         box-shadow: none;
-        flex-direction: column;      /* 上：マッチ一覧 / 下：チャット */
+        flex-direction: column;
       }
 
       .sidebar {
         width: 100%;
-        flex: 0 0 180px;             /* 高さ 180px 固定 */
+        flex: 1 1 auto;
         border-right: none;
         border-bottom: 1px solid #e5e7eb;
       }
 
-      .character-list {
-        max-height: calc(180px - 56px); /* header分を引いた高さだけスクロール */
-        overflow-y: auto;
+      .chat-area {
+        width: 100%;
+        flex: 1 1 auto;
       }
 
-      .chat-area {
-        flex: 1;
+      /* デフォルト（一覧モード）：一覧だけ表示、チャット非表示 */
+      .app:not(.show-chat) .chat-area {
+        display: none;
+      }
+
+      /* チャットモード：チャットだけ表示、一覧非表示 */
+      .app.show-chat .sidebar {
+        display: none;
+      }
+
+      .app.show-chat .chat-area {
+        display: flex;
+      }
+
+      /* 戻るボタンはチャットモードの時だけ表示 */
+      .app.show-chat .back-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .chat-body {
@@ -253,8 +287,8 @@
 
 <body>
 
-  <div class="app">
-    <!-- ▼ 左：マッチ一覧 -->
+  <div class="app" id="appRoot">
+    <!-- ▼ 左：マッチ一覧（PC） / 一覧画面（スマホ） -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-title">マッチ一覧</div>
@@ -263,9 +297,10 @@
       <div id="characterList" class="character-list"></div>
     </aside>
 
-    <!-- ▼ 右：チャット -->
+    <!-- ▼ 右：チャット（PC） / チャット画面（スマホ） -->
     <main class="chat-area">
       <header class="chat-header">
+        <button id="backButton" class="back-button" type="button">←</button>
         <div id="chatHeaderAvatar" class="chat-header-avatar"><span>？</span></div>
         <div>
           <div id="chatHeaderName" class="chat-header-name">相手を選んでください</div>
@@ -299,6 +334,7 @@
 
     let currentCharacterId = null;
 
+    const appEl = document.getElementById("appRoot");
     const characterListEl = document.getElementById("characterList");
     const chatBodyEl = document.getElementById("chatBody");
     const chatHeaderNameEl = document.getElementById("chatHeaderName");
@@ -306,6 +342,7 @@
     const chatHeaderAvatarEl = document.getElementById("chatHeaderAvatar");
     const messageInputEl = document.getElementById("messageInput");
     const sendButtonEl = document.getElementById("sendButton");
+    const backButtonEl = document.getElementById("backButton");
 
     /* ▼ キャラ一覧生成 */
     function renderCharacterList() {
@@ -343,6 +380,11 @@
 
       renderCharacterList();
       renderChat();
+
+      // スマホならチャット画面に切り替え
+      if (window.innerWidth <= 768) {
+        appEl.classList.add("show-chat");
+      }
     }
 
     /* ▼ チャット表示 */
@@ -370,7 +412,7 @@
         card.innerHTML = `
           <div style="font-weight:600; margin-bottom:4px;">相手を選んでください</div>
           <div style="font-size:12px; color:#9ca3af;">
-            上のマッチ一覧から話したい子をタップすると<br>チャットが始まります。
+            マッチ一覧から話したい子をタップすると<br>チャットが始まります。
           </div>
         `;
 
@@ -417,6 +459,32 @@
     messageInputEl.onkeydown = e => {
       if (e.key === "Enter") handleSend();
     };
+
+    /* ▼ 戻るボタン（スマホ用） */
+    backButtonEl.onclick = () => {
+      // 一覧画面に戻る（スマホだけ見た目が変わる）
+      appEl.classList.remove("show-chat");
+      currentCharacterId = null;
+
+      chatHeaderAvatarEl.innerHTML = "<span>？</span>";
+      chatHeaderNameEl.textContent = "相手を選んでください";
+      chatHeaderSubEl.textContent = "リストから選ぶと開始します";
+
+      messageInputEl.value = "";
+      messageInputEl.disabled = true;
+      sendButtonEl.disabled = true;
+
+      renderCharacterList();
+      renderChat();
+    };
+
+    /* ▼ 画面幅が変わったときの調整（横向きなど） */
+    window.addEventListener("resize", () => {
+      // PCサイズになったら常に一覧＋チャット両方表示
+      if (window.innerWidth > 768) {
+        appEl.classList.remove("show-chat");
+      }
+    });
 
     /* ▼ 初期表示：リスト＋案内だけ */
     renderCharacterList();
