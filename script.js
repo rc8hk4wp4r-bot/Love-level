@@ -1,7 +1,7 @@
 // ====== 設定：Worker API の URL ======
 const API_BASE = "https://lovelevel-api.rc8hk4wp4r.workers.dev";
 
-// ====== キャラデータ ======
+// ====== キャラデータ（フロント用表示） ======
 const characters = [
   { id: "lisa", name: "理沙", initials: "リ", desc: "26歳 / 広告代理店", headerSub: "カフェ好き女子" },
   { id: "miyu", name: "美優", initials: "ミ", desc: "25歳 / 保育士", headerSub: "ふわふわ系" },
@@ -29,12 +29,12 @@ const messageInputEl = document.getElementById("messageInput");
 const sendButtonEl = document.getElementById("sendButton");
 const backButtonEl = document.getElementById("backButton");
 
-// ====== API 呼び出し ======
-async function sendToLisa(userMessage) {
+// ====== API 呼び出し：キャラIDも一緒に送る ======
+async function sendToCharacter(characterId, userMessage) {
   const res = await fetch(`${API_BASE}/api/turn`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userMessage }),
+    body: JSON.stringify({ characterId, userMessage }),
   });
 
   if (!res.ok) {
@@ -138,7 +138,7 @@ function selectCharacter(id) {
   }
 }
 
-// ====== 送信処理（API と接続されている部分） ======
+// ====== 送信処理（キャラID付きでAPIに投げる） ======
 async function handleSend() {
   const text = messageInputEl.value.trim();
   if (!text || !currentCharacterId) return;
@@ -149,7 +149,7 @@ async function handleSend() {
   renderChat();
 
   try {
-    const data = await sendToLisa(text); // Worker 経由で DeepSeek に投げる
+    const data = await sendToCharacter(currentCharacterId, text);
 
     histories[currentCharacterId].push({
       from: currentCharacterId,
