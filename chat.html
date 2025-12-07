@@ -35,6 +35,7 @@
       box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
       display: flex;
       overflow: hidden;
+      flex-direction: row;
     }
 
     /* 左：キャラ一覧（PC用） */
@@ -166,71 +167,36 @@
       color: #6b7280;
     }
 
-    /* ▼ ツールバー（ステータス / 分析 / 終了ボタン） */
+    /* ツールバー */
     .chat-toolbar {
-      padding: 8px 12px;
-      background: #f9fafb;
-      border-bottom: 1px solid #e5e7eb;
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
+      padding: 8px 12px;
+      background: #f3f4ff;
+      border-bottom: 1px solid #e5e7eb;
+      flex-wrap: wrap;
     }
 
     .toolbar-button {
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      padding: 5px 12px;
-      font-size: 12px;
-      background: #ffffff;
-      cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 4px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      font-size: 12px;
+      cursor: pointer;
     }
 
     .toolbar-button span {
       font-size: 14px;
     }
 
-    .toolbar-button.primary {
-      border-color: #4f46e5;
-      color: #ffffff;
-      background: #4f46e5;
-    }
-
     .toolbar-button.danger {
-      border-color: #f97373;
+      border-color: #fecaca;
       color: #b91c1c;
       background: #fef2f2;
-    }
-
-    /* ▼ ワンポイントアドバイスバー */
-    .advice-bar {
-      padding: 6px 12px;
-      background: #eef2ff;
-      border-bottom: 1px solid #e5e7eb;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: #4b5563;
-    }
-
-    .advice-label {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: #4f46e5;
-      color: #ffffff;
-    }
-
-    .advice-text {
-      flex: 1;
-      min-width: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     .chat-body {
@@ -270,6 +236,27 @@
       border-bottom-right-radius: 4px;
     }
 
+    /* アドバイスバー */
+    .advice-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #fef3c7;
+      border-top: 1px solid #fde68a;
+      border-bottom: 1px solid #fde68a;
+      font-size: 12px;
+      color: #92400e;
+    }
+
+    .advice-bar.hidden {
+      display: none;
+    }
+
+    .advice-label {
+      font-weight: 600;
+    }
+
     .chat-footer {
       padding: 10px 12px;
       background: #f9fafb;
@@ -299,19 +286,19 @@
       color: #ffffff;
     }
 
-    /* ▼ モーダル */
-    .hidden {
-      display: none;
-    }
-
+    /* モーダル */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.35);
-      display: flex;
+      background: rgba(15, 23, 42, 0.45);
+      display: none;
       align-items: center;
       justify-content: center;
       z-index: 50;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
     }
 
     .modal {
@@ -320,7 +307,8 @@
       max-width: 420px;
       width: 90%;
       padding: 16px 18px 14px;
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.3);
+      font-size: 14px;
     }
 
     .modal-title {
@@ -331,9 +319,9 @@
 
     .modal-body {
       font-size: 13px;
-      color: #4b5563;
+      line-height: 1.6;
       white-space: pre-wrap;
-      max-height: 320px;
+      max-height: 60vh;
       overflow-y: auto;
       margin-bottom: 12px;
     }
@@ -348,19 +336,23 @@
       border-radius: 999px;
       border: 1px solid #d1d5db;
       padding: 6px 14px;
-      font-size: 12px;
+      font-size: 13px;
       cursor: pointer;
       background: #ffffff;
     }
 
     .modal-button.primary {
-      border-color: #4f46e5;
       background: #4f46e5;
       color: #ffffff;
+      border-color: #4f46e5;
+    }
+
+    .hidden {
+      display: none !important;
     }
 
     /* -------------------------- */
-    /* ▼ スマホ向けレイアウト（LINEスタイル） ▼ */
+    /* スマホ向けレイアウト（LINEスタイル） */
     /* -------------------------- */
     @media (max-width: 768px) {
       .app {
@@ -435,15 +427,15 @@
         </div>
       </header>
 
-      <!-- ▼ ステータス / 分析 / 終了 ボタン -->
-            <div class="chat-toolbar">
+      <!-- ツールバー -->
+      <div class="chat-toolbar">
         <button id="statusButton" class="toolbar-button">
           <span>📊</span> ステータス
         </button>
         <button id="analyzeButton" class="toolbar-button">
           <span>🧠</span> チャット分析
         </button>
-        <!-- ★ 課金ポイント：特別アドバイスボタン -->
+        <!-- 課金ポイント：特別アドバイス -->
         <button id="premiumAdviceButton" class="toolbar-button">
           <span>💎</span> 特別アドバイス
         </button>
@@ -452,11 +444,10 @@
         </button>
       </div>
 
-
-      <!-- ▼ ワンポイントアドバイス（必要なときだけ表示） -->
+      <!-- アドバイスバー -->
       <div id="adviceBar" class="advice-bar hidden">
-        <span class="advice-label">ワンポイント</span>
-        <span id="adviceText" class="advice-text"></span>
+        <span class="advice-label">ワンポイント：</span>
+        <span id="adviceText"></span>
       </div>
 
       <section id="chatBody" class="chat-body"></section>
@@ -468,8 +459,8 @@
     </main>
   </div>
 
-  <!-- ▼ モーダル（ステータス / 分析 / 結果発表 共通） -->
-  <div id="modalOverlay" class="modal-overlay hidden">
+  <!-- ▼ モーダル（ステータス / 分析 / 特別アドバイス / 結果発表 共通） -->
+  <div id="modalOverlay" class="modal-overlay hidden" style="display:none;">
     <div class="modal">
       <h2 id="modalTitle" class="modal-title"></h2>
       <div id="modalBody" class="modal-body"></div>
@@ -480,7 +471,7 @@
     </div>
   </div>
 
-  <!-- ロジックは全部別ファイルへ -->
+  <!-- ロジックは全部別ファイル -->
   <script src="script.js"></script>
 </body>
 </html>
