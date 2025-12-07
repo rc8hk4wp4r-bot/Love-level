@@ -2,13 +2,15 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   // ====== 設定：Cloudflare Worker の URL ======
-    const API_BASE = "https://lovelevel-api.rc8hk4wp4r.workers.dev";
+  const API_BASE = "https://lovelevel-api.rc8hk4wp4r.workers.dev";
 
   // ゲームルール（10スタート / 60で成功 / 0で失敗）
   const SUCCESS_SCORE = 60;  // 60 で成功
   const FAIL_SCORE = 0;      // 0 になったら失敗
   const INITIAL_SCORE = 10;  // 10 スタート
 
+  // プレミアム機能（特別アドバイス）の解放フラグ（ひとまず全キャラ共通）
+  let premiumUnlocked = false;
 
   // ====== キャラデータ ======
   const characters = [
@@ -46,9 +48,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const sendButtonEl = document.getElementById("sendButton");
   const backButtonEl = document.getElementById("backButton");
 
-  // ツールバー（無くても動くように後でガード）
+  // ツールバー
   const statusButtonEl = document.getElementById("statusButton");
   const analyzeButtonEl = document.getElementById("analyzeButton");
+  const premiumAdviceButtonEl = document.getElementById("premiumAdviceButton");
   const endGameButtonEl = document.getElementById("endGameButton");
 
   // ワンポイントアドバイスバー
@@ -268,6 +271,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // ====== 入力の有効/無効 ======
+  function disableInput() {
+    if (messageInputEl) {
+      messageInputEl.disabled = true;
+      messageInputEl.value = "";
+    }
+    if (sendButtonEl) {
+      sendButtonEl.disabled = true;
+    }
+  }
+
+  function enableInput() {
+    if (messageInputEl) {
+      messageInputEl.disabled = false;
+    }
+    if (sendButtonEl) {
+      sendButtonEl.disabled = false;
+    }
+  }
+
   // ====== チャット送信処理 ======
   async function handleSend() {
     const text = messageInputEl ? messageInputEl.value.trim() : "";
@@ -291,7 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const data = await sendToCharacter(currentCharacterId, text);
 
-            // スコア更新ロジック
+      // スコア更新ロジック
       // data.score があればそれを採用、なければ scoreDelta を足す
       if (typeof data.score === "number") {
         currentScore = data.score;
@@ -299,11 +322,9 @@ document.addEventListener("DOMContentLoaded", () => {
         currentScore = currentScore + data.scoreDelta;
       }
 
-      // 0〜60 にクランプ（マイナスにならないように＆上限も60）
+      // 0〜SUCCESS_SCORE にクランプ（マイナスにならない & 上限60）
       currentScore = Math.max(0, Math.min(SUCCESS_SCORE, currentScore));
-
       scores[currentCharacterId] = currentScore;
-
 
       // ステージ更新
       if (typeof data.stage === "number") {
@@ -348,7 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const text =
         `${character.name}との会話はかなりいい感じ！\n` +
-        `現在のスコア：${currentScore}\n\n` +
+        `現在のスコア：${currentScore} / ${SUCCESS_SCORE}\n\n` +
         `このままなら告白しても成功しそうな雰囲気です。\n` +
         `どんなアプローチをするか、次の恋愛で試してみよう。`;
 
@@ -370,7 +391,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const text =
         `${character.name}は少し距離を置きたそうな様子…。\n` +
-        `現在のスコア：${currentScore}\n\n` +
+        `現在のスコア：${currentScore} / ${SUCCESS_SCORE}\n\n` +
         `質問攻めや一方的な話になっていなかったか、振り返ってみよう。\n` +
         `「相手に喋らせる」「共感する」を意識すると、次はきっと良くなるはず。`;
 
@@ -383,25 +404,6 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       disableInput();
-    }
-  }
-
-  function disableInput() {
-    if (messageInputEl) {
-      messageInputEl.disabled = true;
-      messageInputEl.value = "";
-    }
-    if (sendButtonEl) {
-      sendButtonEl.disabled = true;
-    }
-  }
-
-  function enableInput() {
-    if (messageInputEl) {
-      messageInputEl.disabled = false;
-    }
-    if (sendButtonEl) {
-      sendButtonEl.disabled = false;
     }
   }
 
@@ -461,6 +463,75 @@ document.addEventListener("DOMContentLoaded", () => {
     return summary;
   }
 
+  // ====== 特別アドバイス（ロック機能付き） ======
+  function buildPremiumAdviceText() {
+    if (!currentCharacterId) {
+      return "まずは誰かと話してみてね。";
+    }
+
+    const c = characters.find(x => x.id === currentCharacterId);
+    const logs = histories[currentCharacterId] || [];
+    const myMessages = logs.filter(m => m.from === "me");
+
+    let text = "";
+
+    text += `【${c.name} との会話のガチ総評】\n\n`;
+
+    if (myMessages.length === 0) {
+      text += "まだ会話がほとんど無いから、まずは5〜10通くらい話してから見てみよう。\n";
+      return text;
+    }
+
+    // 簡易分析の再利用
+    text += buildAnalysisText();
+    text += "\n";
+
+    if (currentScore >= 50) {
+      text += "▶ 全体的にかなりバランスの良い会話ができているよ。\n";
+      text += "　次のステップとしては、相手の価値観や本音に一歩踏み込む質問をしてみると距離が縮みやすい。\n";
+    } else if (currentScore >= 30) {
+      text += "▶ 悪くはないけど、もう少し『相手に喋ってもらう』意識を強めると良くなりそう。\n";
+      text += "　自分の話：相手の話＝3:7くらいを意識してみるとバランスが良いよ。\n";
+    } else {
+      text += "▶ ちょっと自己中心的に見えたり、ぶっきらぼうに見えている可能性があるかも。\n";
+      text += "　相手の発言に対して『共感 → 一言自分の感想 → 質問』の3ステップを意識してみよう。\n";
+    }
+
+    text += "\n▶ 次に送ると良い例文のイメージ：\n";
+    text += "　「さっきの話、◯◯ってところが面白いと思った！〇〇は普段どうしてるの？」\n";
+
+    return text;
+  }
+
+  function showPremiumAdviceLockedModal() {
+    const body =
+      "この「特別アドバイス」は、広告視聴 or 課金で解放される想定のコンテンツです。\n\n" +
+      "今は開発中なので、『広告を見たことにする』ボタンを押すと解放されます。";
+
+    openModal(
+      "💎 特別アドバイス（ロック中）",
+      body,
+      true,
+      "広告を見たことにする",
+      () => {
+        premiumUnlocked = true;
+        // 将来ここを「本物の広告 or 決済完了コールバック」に差し替える
+      }
+    );
+  }
+
+  function showPremiumAdviceModal() {
+    if (!currentCharacterId) {
+      openModal("特別アドバイス", "まずは誰かと話してみてね。");
+      return;
+    }
+
+    const c = characters.find(x => x.id === currentCharacterId);
+    const text = buildPremiumAdviceText();
+
+    openModal(`💎 ${c.name} からの特別アドバイス`, text);
+  }
+
   // ====== ステータス表示 ======
   function showStatusModal() {
     if (!currentCharacterId) {
@@ -475,7 +546,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let text =
       `【${c.name} との現在の状態】\n` +
-      `スコア：${score}\n\n`;
+      `スコア：${score} / ${SUCCESS_SCORE}\n\n`;
 
     if (gameEnded[currentCharacterId]) {
       if (score >= SUCCESS_SCORE) {
@@ -508,7 +579,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let text =
       `【${c.name} との現在のスコア】\n` +
-      `スコア：${score}\n\n` +
+      `スコア：${score} / ${SUCCESS_SCORE}\n\n` +
       `―― チャットのざっくり分析 ――\n` +
       analysis;
 
@@ -592,6 +663,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const c = characters.find(x => x.id === currentCharacterId);
       const analysis = buildAnalysisText();
       openModal(`【${c.name} とのチャット分析】`, analysis);
+    };
+  }
+
+  // 特別アドバイスボタン
+  if (premiumAdviceButtonEl) {
+    premiumAdviceButtonEl.onclick = () => {
+      if (!premiumUnlocked) {
+        showPremiumAdviceLockedModal();  // ロック中モーダル
+      } else {
+        showPremiumAdviceModal();        // 解放後のガチ総評
+      }
     };
   }
 
