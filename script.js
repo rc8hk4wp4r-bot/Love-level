@@ -71,28 +71,28 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // ====== API 呼び出し（1ターン分） ======
-  async function sendToCharacter(characterId, userMessage) {
-    const res = await fetch(`${API_BASE}/api/turn`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        characterId,
-        userMessage,
-        score: currentScore, // 今の好感度を渡す
-        stage: currentStage
-      }),
-    });
+ // ====== API 呼び出し（1ターン分） ======
+async function sendToCharacter(characterId, userMessage) {
+  const res = await fetch(`${API_BASE}/api/turn`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      characterId,
+      userMessage,
+      score: currentScore,              // 今の好感度を渡す
+      stage: currentStage,              // 今のステージ
+      history: histories[characterId] || []  // ★ 会話履歴を一緒に渡す
+    }),
+  });
 
-    if (!res.ok) {
-      console.error("API Error:", res.status);
-      throw new Error("API error");
-    }
-
-    // Worker からは {lisaMessage, score, scoreDelta, stage, advice} のどれかが返る想定
-    const data = await res.json();
-    return data;
+  if (!res.ok) {
+    console.error("API Error:", res.status);
+    throw new Error("API error");
   }
+
+  const data = await res.json();
+  return data;
+}
 
   // ====== モーダル系 ======
   function openModal(title, body, showPrimary = false, primaryLabel = "OK", primaryHandler = null) {
