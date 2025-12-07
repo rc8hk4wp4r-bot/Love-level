@@ -5,9 +5,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const API_BASE = "https://lovelevel-api.rc8hk4wp4r.workers.dev";
 
   // ゲームルール（10スタート / 60で成功 / 0で失敗）
-  const SUCCESS_SCORE = 60;  // 60 で成功
+  const SUCCESS_SCORE = 60;  // 従来のゴール参考値
   const FAIL_SCORE = 0;      // 0 になったら失敗
   const INITIAL_SCORE = 10;  // 10 スタート
+
+  // 「誘い成功」を判定するしきい値（ユーザー要望：50以上）
+  const INVITE_SUCCESS_THRESHOLD = 50;
 
   // プレミアム機能（特別アドバイス）の解放フラグ（ひとまず全キャラ共通）
   let premiumUnlocked = false;
@@ -71,28 +74,29 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
- // ====== API 呼び出し（1ターン分） ======
-async function sendToCharacter(characterId, userMessage) {
-  const res = await fetch(`${API_BASE}/api/turn`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      characterId,
-      userMessage,
-      score: currentScore,              // 今の好感度を渡す
-      stage: currentStage,              // 今のステージ
-      history: histories[characterId] || []  // ★ 会話履歴を一緒に渡す
-    }),
-  });
+  // ====== API 呼び出し（1ターン分） ======
+  async function sendToCharacter(characterId, userMessage) {
+    const res = await fetch(`${API_BASE}/api/turn`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        characterId,
+        userMessage,
+        score: currentScore,                  // 今の好感度を渡す
+        stage: currentStage,                  // 今のステージ
+        history: histories[characterId] || [] // ★ 会話履歴を一緒に渡す
+      }),
+    });
 
-  if (!res.ok) {
-    console.error("API Error:", res.status);
-    throw new Error("API error");
+    if (!res.ok) {
+      console.error("API Error:", res.status);
+      throw new Error("API error");
+    }
+
+    // Worker からは {lisaMessage, score, scoreDelta, stage, advice, flags} が返る想定
+    const data = await res.json();
+    return data;
   }
-
-  const data = await res.json();
-  return data;
-}
 
   // ====== モーダル系 ======
   function openModal(title, body, showPrimary = false, primaryLabel = "OK", primaryHandler = null) {
@@ -346,8 +350,8 @@ async function sendToCharacter(characterId, userMessage) {
 
       renderChat();
 
-      // ゲーム判定
-      checkGameState(c);
+      // ゲーム判定（★ AIのflagsも渡す）
+      checkGameState(c, data);
 
     } catch (e) {
       console.error(e);
@@ -360,9 +364,61 @@ async function sendToCharacter(characterId, userMessage) {
   }
 
   // ====== ゲーム判定（成功 / 失敗） ======
-  function checkGameState(character) {
+  function checkGameState(character, apiResult) {
     if (!character) return;
 
+    // ★ まずはAIの「誘い/告白」判定を使う
+    const flags = apiResult && apiResult.flags ? apiResult.flags : null;
+    const isInvitation = flags && (flags.isInvitation || flags.isConfession);
+
+    if (isInvitation) {
+      gameEnded[currentCharacterId] = true;
+
+      // 好感度がしきい値以上 → 誘い成功エンド
+      if (currentScore >= INVITE_SUCCESS_THRESHOLD) {
+        const text =
+          `${character.name}にデート（またはそれに近いお誘い）をして、OK をもらえたようです！\n` +
+          `現在のスコア：${currentScore} / ${SUCCESS_SCORE}\n\n` +
+          `「ある程度仲良くなってから、自分から誘う」という流れをちゃんと踏めているよ。\n` +
+          `この感覚を覚えておいて、実際の恋愛でも試してみよう。\n\n` +
+          `特別アドバイスでは、この会話ログをもとに\n` +
+          `・あなたの会話タイプ診断\n` +
+          `・良かった点 / つまづきポイント\n` +
+          `・次回以降に使える具体的なセリフ例\n` +
+          `をガチでフィードバックする想定です。`;
+
+        openModal(
+          "デートのお誘い、成功！ 🎉",
+          text,
+          true,
+          "もう一度この子と話す",
+          () => resetCharacterGame(currentCharacterId)
+        );
+
+        disableInput();
+        return;
+      } else {
+        // しきい値未満で誘ったら「まだ早い」エンド
+        const text =
+          `${character.name}を誘ってみたけれど、まだちょっと距離が足りなかったみたい。\n` +
+          `現在のスコア：${currentScore} / ${SUCCESS_SCORE}\n\n` +
+          `いきなり誘う前に、もう少し「共通の話題を広げる」「相手の価値観を聞く」など\n` +
+          `土台づくりをしてからアプローチすると成功率が上がりやすいよ。`;
+
+        openModal(
+          "今回はまだタイミング早めかも 💔",
+          text,
+          true,
+          "もう一度この子と話す",
+          () => resetCharacterGame(currentCharacterId)
+        );
+
+        disableInput();
+        return;
+      }
+    }
+
+    // ★ ここから下は「従来どおりスコアだけで見る保険ロジック」
     if (currentScore >= SUCCESS_SCORE) {
       // 成功
       gameEnded[currentCharacterId] = true;
@@ -553,6 +609,8 @@ async function sendToCharacter(characterId, userMessage) {
         text += "この子とはすでにゲーム成功済みです。おめでとう！\n";
       } else if (score <= FAIL_SCORE) {
         text += "この子とは一度ゲームオーバーになっています。\n\nもう一度リセットしてチャレンジしてみよう。";
+      } else if (score >= INVITE_SUCCESS_THRESHOLD) {
+        text += "この子とはデートに誘えば成功しやすいラインにいるよ。あとはタイミングと誘い方次第。\n";
       }
     } else {
       text += `成功まであと：${toSuccess > 0 ? toSuccess : 0}\n`;
