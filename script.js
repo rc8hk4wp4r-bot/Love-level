@@ -2,12 +2,13 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   // ====== 設定：Cloudflare Worker の URL ======
-  const API_BASE = "https://lovelevel-api.rc8hk4wp4r.workers.dev";
+    const API_BASE = "https://lovelevel-api.rc8hk4wp4r.workers.dev";
 
-  // ゲームルール
-  const SUCCESS_SCORE = 50;  // +50 で成功
-  const FAIL_SCORE = -10;    // -10 で失敗
-  const INITIAL_SCORE = 0;   // 0 スタート
+  // ゲームルール（10スタート / 60で成功 / 0で失敗）
+  const SUCCESS_SCORE = 60;  // 60 で成功
+  const FAIL_SCORE = 0;      // 0 になったら失敗
+  const INITIAL_SCORE = 10;  // 10 スタート
+
 
   // ====== キャラデータ ======
   const characters = [
@@ -290,14 +291,19 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const data = await sendToCharacter(currentCharacterId, text);
 
-      // スコア更新ロジック
+            // スコア更新ロジック
       // data.score があればそれを採用、なければ scoreDelta を足す
       if (typeof data.score === "number") {
         currentScore = data.score;
       } else if (typeof data.scoreDelta === "number") {
         currentScore = currentScore + data.scoreDelta;
       }
+
+      // 0〜60 にクランプ（マイナスにならないように＆上限も60）
+      currentScore = Math.max(0, Math.min(SUCCESS_SCORE, currentScore));
+
       scores[currentCharacterId] = currentScore;
+
 
       // ステージ更新
       if (typeof data.stage === "number") {
