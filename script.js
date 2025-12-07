@@ -26,7 +26,7 @@ let currentCharacterId = null;
 let currentScore = 50;
 let currentStage = 1;
 
-// DOM 要素取得
+// ====== DOM 要素 ======
 const appEl = document.getElementById("appRoot");
 const characterListEl = document.getElementById("characterList");
 const chatBodyEl = document.getElementById("chatBody");
@@ -37,10 +37,14 @@ const messageInputEl = document.getElementById("messageInput");
 const sendButtonEl = document.getElementById("sendButton");
 const backButtonEl = document.getElementById("backButton");
 
-// ヘッダーのボタン
+// ツールバー
 const statusButtonEl = document.getElementById("statusButton");
 const analyzeButtonEl = document.getElementById("analyzeButton");
 const endGameButtonEl = document.getElementById("endGameButton");
+
+// アドバイスバー
+const adviceBarEl = document.getElementById("adviceBar");
+const adviceTextEl = document.getElementById("adviceText");
 
 // モーダル
 const modalOverlayEl = document.getElementById("modalOverlay");
@@ -70,7 +74,7 @@ async function sendToCharacter(characterId, userMessage) {
   return await res.json(); // { lisaMessage, score, scoreDelta, stage, advice, flags }
 }
 
-// ====== ランク & コメント ======
+// ====== ステータス系 ======
 function getRank(score) {
   if (score >= 80) return "S";
   if (score >= 65) return "A";
@@ -88,7 +92,7 @@ function getStatusComment(score) {
 }
 
 // ====== モーダル ======
-function openModal(title, body, showPrimary = false, primaryLabel = "もう一度この子と話す", primaryHandler = null) {
+function openModal(title, body, showPrimary = false, primaryLabel = "OK", primaryHandler = null) {
   modalTitleEl.textContent = title;
   modalBodyEl.textContent = body;
 
@@ -109,6 +113,17 @@ function openModal(title, body, showPrimary = false, primaryLabel = "もう一�
 
 function closeModal() {
   modalOverlayEl.classList.add("hidden");
+}
+
+// ====== アドバイスバー表示 ======
+function showAdviceBar(text) {
+  if (!text) {
+    adviceBarEl.classList.add("hidden");
+    adviceTextEl.textContent = "";
+    return;
+  }
+  adviceTextEl.textContent = text;
+  adviceBarEl.classList.remove("hidden");
 }
 
 // ====== UI 描画 ======
@@ -161,6 +176,7 @@ function renderChat() {
 
     wrapper.appendChild(card);
     chatBodyEl.appendChild(wrapper);
+    showAdviceBar(""); // 何も表示しない
     return;
   }
 
@@ -199,6 +215,9 @@ function selectCharacter(id) {
   renderCharacterList();
   renderChat();
 
+  // そのキャラの最後のアドバイスがあれば表示
+  showAdviceBar(lastAdvice[id] || "");
+
   if (window.innerWidth <= 768) {
     appEl.classList.add("show-chat");
   }
@@ -229,8 +248,9 @@ async function handleSend() {
       currentStage = data.stage;
       stages[currentCharacterId] = data.stage;
     }
-    if (typeof data.advice === "string") {
-      lastAdvice[currentCharacterId] = data.advice;
+    if (typeof data.advice === "string" && data.advice.trim()) {
+      lastAdvice[currentCharacterId] = data.advice.trim();
+      showAdviceBar(data.advice.trim());
     }
 
     histories[currentCharacterId].push({
@@ -248,7 +268,7 @@ async function handleSend() {
   renderChat();
 }
 
-// ====== チャット分析（簡易/ローカル） ======
+// ====== チャット分析（ローカル簡易版） ======
 function buildAnalysisText() {
   if (!currentCharacterId) {
     return "まずは誰かと話してみてね。";
@@ -321,7 +341,6 @@ function showStatusModal() {
     `スコア：${score} / 100（ランク：${rank}）\n\n` +
     comment;
 
-  // ここでは DeepSeek のアドバイスはまだ出さない（後で広告解放用に使う）
   openModal("現在のステータス", text);
 }
 
@@ -342,13 +361,18 @@ function endCurrentGame() {
   const rank = getRank(score);
   const comment = getStatusComment(score);
   const analysis = buildAnalysisText();
+  const advice = lastAdvice[currentCharacterId];
 
-  const text =
+  let text =
     `【${c.name} との最終結果】\n` +
     `恋愛偏差値：${score} / 100（ランク：${rank}）\n\n` +
     `${comment}\n\n` +
     `―― チャットのざっくり分析 ――\n` +
     analysis;
+
+  if (advice) {
+    text += `\n―― 最後のワンポイントアドバイス ――\n${advice}\n`;
+  }
 
   gameEnded[currentCharacterId] = true;
 
@@ -376,6 +400,7 @@ function resetCharacterGame(id) {
     currentScore = 50;
     currentStage = 1;
     renderChat();
+    showAdviceBar("");
   }
 }
 
@@ -434,3 +459,4 @@ window.addEventListener("resize", () => {
 // ====== 初期表示 ======
 renderCharacterList();
 renderChat();
+showAdviceBar("");
