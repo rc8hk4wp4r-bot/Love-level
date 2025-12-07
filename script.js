@@ -4,13 +4,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // ====== 設定：Cloudflare Worker の URL ======
   const API_BASE = "https://lovelevel-api.rc8hk4wp4r.workers.dev";
 
-  // ゲームルール（10スタート / 60で成功 / 0で失敗）
-  const SUCCESS_SCORE = 60;  // 従来のゴール参考値
+  // ゲームルール（10スタート / 40で成功 / 0で失敗）
+  const SUCCESS_SCORE = 40;  // 従来のゴール参考値
   const FAIL_SCORE = 0;      // 0 になったら失敗
   const INITIAL_SCORE = 10;  // 10 スタート
 
   // 「誘い成功」を判定するしきい値（ユーザー要望：50以上）
-  const INVITE_SUCCESS_THRESHOLD = 50;
+  const INVITE_SUCCESS_THRESHOLD = 30;
+
 
   // プレミアム機能（特別アドバイス）の解放フラグ（ひとまず全キャラ共通）
   let premiumUnlocked = false;
